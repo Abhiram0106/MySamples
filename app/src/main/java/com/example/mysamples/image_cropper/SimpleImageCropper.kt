@@ -1,6 +1,6 @@
-package com.example.mysamples
+package com.example.mysamples.image_cropper
 
-import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,11 +25,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
-import java.io.BufferedReader
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,12 +47,25 @@ fun SimpleImageCropper(modifier: Modifier = Modifier) {
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             println("uri = $uri")
             uri?.let {
-                context.contentResolver.openInputStream(uri).use { inputStream ->
-                    val bitmap = BitmapFactory.decodeStream(inputStream)
-                    pic = bitmap.asImageBitmap()
+                scope.launch {
+                    pic = it.toImageBitmapUsingBitmapFactory(context)
                 }
             }
         }
+    val tempFileCreator = rememberMyTempFileCreator()
+    val takePhoto =
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
+            println("Take photo success = $it")
+            if (it) {
+                scope.launch {
+                    pic = tempFileCreator.photoUri.toImageBitmapUsingBitmapFactory(context)
+                }
+            }
+        }
+
+    LaunchedEffect(pic) {
+        println("pic changed, is null = ${pic == null}")
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         if (pic != null) {
@@ -72,6 +85,7 @@ fun SimpleImageCropper(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.labelLarge
             )
         }
+
     }
 
     if (showBottomSheet) {
@@ -103,6 +117,9 @@ fun SimpleImageCropper(modifier: Modifier = Modifier) {
                             sheetState.hide()
                         }.invokeOnCompletion {
                             if (!sheetState.isVisible) showBottomSheet = false
+                        }
+                        if (tempFileCreator.photoUri != Uri.EMPTY) {
+                            takePhoto.launch(tempFileCreator.photoUri)
                         }
                     }
                 ) {

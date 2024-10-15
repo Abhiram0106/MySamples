@@ -1,4 +1,4 @@
-package com.example.mysamples
+package com.example.mysamples.star_rating_bar
 
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -38,7 +38,6 @@ import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.star
 import androidx.graphics.shapes.toPath
-import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun TestingStarBar(modifier: Modifier = Modifier) {
