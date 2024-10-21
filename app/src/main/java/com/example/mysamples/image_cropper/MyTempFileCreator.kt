@@ -28,7 +28,7 @@ fun rememberMyTempFileCreator(): MyTempFileCreator {
 
 class MyTempFileCreator(private val context: Context) : Closeable {
 
-    var photoUri = Uri.EMPTY
+    var photoUri: Uri = Uri.EMPTY
         private set
     private val timeStamp: String = LocalDateTime.now().toString()
     private val storageDir: File? = context.externalCacheDir

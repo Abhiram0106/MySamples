@@ -1,9 +1,5 @@
 package com.example.mysamples.image_cropper
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -42,26 +38,34 @@ fun SimpleImageCropper(modifier: Modifier = Modifier) {
     }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val test = rememberMyImageManager { uri ->
+        println("uri = $uri")
+        uri?.let {
+            scope.launch {
+                pic = it.toImageBitmapUsingBitmapFactory(context)
+            }
+        }
+    }
     val sheetState = rememberModalBottomSheetState()
-    val pickMedia =
-        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-            println("uri = $uri")
-            uri?.let {
-                scope.launch {
-                    pic = it.toImageBitmapUsingBitmapFactory(context)
-                }
-            }
-        }
-    val tempFileCreator = rememberMyTempFileCreator()
-    val takePhoto =
-        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
-            println("Take photo success = $it")
-            if (it) {
-                scope.launch {
-                    pic = tempFileCreator.photoUri.toImageBitmapUsingBitmapFactory(context)
-                }
-            }
-        }
+//    val pickMedia =
+//        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+//            println("uri = $uri")
+//            uri?.let {
+//                scope.launch {
+//                    pic = it.toImageBitmapUsingBitmapFactory(context)
+//                }
+//            }
+//        }
+//    val tempFileCreator = rememberMyTempFileCreator()
+//    val takePhoto =
+//        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
+//            println("Take photo success = $it")
+//            if (it) {
+//                scope.launch {
+//                    pic = tempFileCreator.photoUri.toImageBitmapUsingBitmapFactory(context)
+//                }
+//            }
+//        }
 
     LaunchedEffect(pic) {
         println("pic changed, is null = ${pic == null}")
@@ -103,7 +107,8 @@ fun SimpleImageCropper(modifier: Modifier = Modifier) {
                                 showBottomSheet = false
                             }
                         }
-                        pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+//                        pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        test.selectImage()
                     }
                 ) {
                     Text(
@@ -118,9 +123,10 @@ fun SimpleImageCropper(modifier: Modifier = Modifier) {
                         }.invokeOnCompletion {
                             if (!sheetState.isVisible) showBottomSheet = false
                         }
-                        if (tempFileCreator.photoUri != Uri.EMPTY) {
-                            takePhoto.launch(tempFileCreator.photoUri)
-                        }
+//                        if (tempFileCreator.photoUri != Uri.EMPTY) {
+//                            takePhoto.launch(tempFileCreator.photoUri)
+//                        }
+                        test.takePhoto()
                     }
                 ) {
                     Text(
