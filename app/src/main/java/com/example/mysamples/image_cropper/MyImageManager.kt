@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import java.io.Closeable
 
 @Composable
 fun rememberMyImageManager(selection: (uri: Uri?) -> Unit): MyImageManager {
@@ -18,6 +17,7 @@ fun rememberMyImageManager(selection: (uri: Uri?) -> Unit): MyImageManager {
     val myImageManager = remember {
         MyImageManager(
             context = context,
+            tempFileCreator = MyTempFileCreator(context),
             selection = selection
         )
     }
@@ -29,32 +29,37 @@ fun rememberMyImageManager(selection: (uri: Uri?) -> Unit): MyImageManager {
     return myImageManager
 }
 
-class MyImageManager(context: Context, selection: (uri: Uri?) -> Unit) : Closeable {
+class MyImageManager(
+    context: Context,
+    private val tempFileCreator: ITempFileCreator,
+    selection: (uri: Uri?) -> Unit
+) : IImageManager, ITempFileCreator by tempFileCreator {
     private val registry = (context as ComponentActivity).activityResultRegistry
-    private val tempFile by lazy {
-        MyTempFileCreator(context).also { it.invoke() }
+    private val tempFileUri by lazy {
+        tempFileCreator.createFile()
     }
     private val takePicture: ActivityResultLauncher<Uri> by lazy {
         registry.register("take_photo_key", ActivityResultContracts.TakePicture()) { success ->
-            selection(if (success) tempFile.photoUri else null)
+            selection(if (success) tempFileUri else null)
         }
     }
-    private val selectPhoto: ActivityResultLauncher<PickVisualMediaRequest> =
+    private val selectPhoto: ActivityResultLauncher<PickVisualMediaRequest> by lazy {
         registry.register("select_picture_key", ActivityResultContracts.PickVisualMedia()) { uri ->
             selection(uri)
         }
+    }
 
-    fun selectImage() {
+    override fun selectImage() {
         selectPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
 
-    fun takePhoto() {
-        takePicture.launch(tempFile.photoUri)
+    override fun takePhoto() {
+        takePicture.launch(tempFileUri)
     }
 
-    override fun close() {
+    override fun close(): Boolean {
         takePicture.unregister()
         selectPhoto.unregister()
-        tempFile.close()
+        return tempFileCreator.close()
     }
 }

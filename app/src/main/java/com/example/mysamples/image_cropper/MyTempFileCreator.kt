@@ -18,7 +18,7 @@ fun rememberMyTempFileCreator(): MyTempFileCreator {
         MyTempFileCreator(context)
     }
     DisposableEffect(Unit) {
-        myTempFileCreator()
+        myTempFileCreator.createFile()
         onDispose {
             myTempFileCreator.close()
         }
@@ -26,10 +26,9 @@ fun rememberMyTempFileCreator(): MyTempFileCreator {
     return myTempFileCreator
 }
 
-class MyTempFileCreator(private val context: Context) : Closeable {
+class MyTempFileCreator(private val context: Context) : ITempFileCreator {
 
-    var photoUri: Uri = Uri.EMPTY
-        private set
+    private var photoUri: Uri = Uri.EMPTY
     private val timeStamp: String = LocalDateTime.now().toString()
     private val storageDir: File? = context.externalCacheDir
 
@@ -39,16 +38,18 @@ class MyTempFileCreator(private val context: Context) : Closeable {
         storageDir
     )
 
-    operator fun invoke() {
+    override fun createFile(): Uri {
         photoUri = FileProvider.getUriForFile(
             context,
             "com.example.mysamples.fileprovider",
             photoFile
         )
+        return photoUri
     }
 
-    override fun close() {
-        val success = photoFile.delete()
-        println("CLOSING MyTempFileCreator $success")
+    override fun close(): Boolean {
+        return photoFile.delete().also { success ->
+            println("CLOSING MyTempFileCreator $success")
+        }
     }
 }
