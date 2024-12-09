@@ -4,18 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.mysamples.ai_text_load.AITextLoad
-import com.example.mysamples.image_cropper.SimpleImageCropper
+import com.example.mysamples.root_encoder.MyRtmpStream
 import com.example.mysamples.ui.theme.MySamplesTheme
 
 class MainActivity : ComponentActivity() {
@@ -29,7 +23,12 @@ class MainActivity : ComponentActivity() {
 //                    Box(modifier = Modifier.padding(innerPadding).background(color)) {
 //                        SimpleImageCropper()
 //                    }
-                    AITextLoad(text = "Hello world ".repeat(10), modifier = Modifier.padding(innerPadding))
+//                    AITextLoad(text = "Hello world ".repeat(10), modifier = Modifier.padding(innerPadding))
+                    Box(modifier = Modifier.padding(innerPadding)) {
+//                        NestedScrollAnimation()
+//                        NestedScrollAnimationSmooth()
+                        MyRtmpStream()
+                    }
                 }
             }
         }
