@@ -35,8 +35,10 @@ class MyRtmpStreamHandler(
     private var retryDelayMultiplier = 0
     var connectionDisconnected: Boolean by mutableStateOf(false)
         private set
+    var isLoading: Boolean by mutableStateOf(false)
+        private set
 
-    private val rtmpStream = RtmpStream(context, this).also {
+    private val rtmpStream = RtmpStream(context = context, connectChecker = this).also {
         it.audioSource.echoCanceler = true
         it.audioSource.noiseSuppressor = true
         (it.videoSource as Camera2Source).apply {
@@ -146,11 +148,14 @@ class MyRtmpStreamHandler(
     }
 
     override fun onConnectionFailed(reason: String) {
-        connectionDisconnected = false
         Log.e("MyRtmpStream", "onConnectionFailed: $reason")
+        connectionDisconnected = false
+        isLoading = false
+
         val delay: Long = min(retryDelayMultiplier * 1000L, 5000L)
         val isRetrying = rtmpStream.getStreamClient().reTry(delay, reason)
         retryDelayMultiplier++
+
         if (isRetrying) {
             Log.e("MyRtmpStream", "retrying: count = $retryDelayMultiplier")
         } else {
@@ -162,18 +167,21 @@ class MyRtmpStreamHandler(
     override fun onConnectionStarted(url: String) {
         Log.e("MyRtmpStream", "onConnectionStarted: $url")
         connectionDisconnected = false
+        isLoading = true
     }
 
     override fun onConnectionSuccess() {
         Log.e("MyRtmpStream", "onConnectionSuccess")
         retryDelayMultiplier = 0
         connectionDisconnected = false
+        isLoading = false
     }
 
     override fun onDisconnect() {
         Log.e("MyRtmpStream", "onDisconnect")
         retryDelayMultiplier = 0
         connectionDisconnected = true
+        isLoading = false
     }
 
 }
