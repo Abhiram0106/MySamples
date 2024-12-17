@@ -1,8 +1,7 @@
 package com.example.mysamples.root_encoder
 
-import android.graphics.SurfaceTexture
 import android.util.Log
-import android.view.TextureView
+import android.view.SurfaceHolder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -19,13 +18,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.pedro.common.ConnectChecker
 import com.pedro.encoder.input.sources.audio.MicrophoneSource
 import com.pedro.encoder.input.sources.video.Camera2Source
-import com.pedro.encoder.input.sources.video.NoVideoSource
-import com.pedro.encoder.input.sources.video.VideoSource
 import com.pedro.encoder.input.video.CameraHelper
+import com.pedro.encoder.utils.gl.AspectRatioMode
 import com.pedro.library.rtmp.RtmpStream
+import com.pedro.library.view.OpenGlView
 
 @Composable
 fun MyRtmpStream(modifier: Modifier = Modifier) {
@@ -66,10 +67,10 @@ fun MyRtmpStream(modifier: Modifier = Modifier) {
             (it.videoSource as Camera2Source).enableAutoExposure()
         }
 
+
     var prepared by remember {
         mutableStateOf(false)
     }
-
 
     var isMuted by remember {
         mutableStateOf((rtmpStream.audioSource as MicrophoneSource).isMuted())
@@ -81,19 +82,25 @@ fun MyRtmpStream(modifier: Modifier = Modifier) {
         )
     }
 
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        rtmpStream.release()
+        prepared = false
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
-                TextureView(ctx).apply {
-                    surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-                        override fun onSurfaceTextureAvailable(
-                            surfaceTexture: SurfaceTexture,
-                            width: Int,
-                            height: Int
-                        ) {
+                OpenGlView(ctx).apply {
+                    val view = this
+                    view.setAspectRatioMode(AspectRatioMode.Adjust)
+                    view.holder.addCallback(object : SurfaceHolder.Callback {
+                        override fun surfaceCreated(p0: SurfaceHolder) {
+                        }
 
-                            Log.e("Surface", "Available")
+                        override fun surfaceChanged(p0: SurfaceHolder, p1: Int, p2: Int, p3: Int) {
+
+                            Log.e("SurfaceChanged", "init")
 
                             val videoPrepared = rtmpStream.prepareVideo(
                                 width = width,
@@ -110,24 +117,15 @@ fun MyRtmpStream(modifier: Modifier = Modifier) {
                             if (rtmpStream.isOnPreview) {
                                 rtmpStream.stopPreview()
                             }
-                            rtmpStream.startPreview(surfaceTexture, width, height)
+
+                            rtmpStream.startPreview(view)
                         }
 
-                        override fun onSurfaceTextureSizeChanged(
-                            surfaceTexture: SurfaceTexture,
-                            width: Int,
-                            height: Int
-                        ) {
-                        }
-
-                        override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
-                            Log.e("Surface", "Destroyed")
+                        override fun surfaceDestroyed(p0: SurfaceHolder) {
+                            rtmpStream.videoSource.stop()
                             rtmpStream.stopPreview()
-                            return rtmpStream.isOnPreview
                         }
-
-                        override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) {}
-                    }
+                    })
                 }
             }
         )
